@@ -67,18 +67,22 @@ def validate_portfolio(portfolio_df):
     if (clean_df["Ticker"] == "").any():
         errors.append("Ticker values cannot be blank.")
 
-    if (clean_df["Shares"] < 0).any():
-        errors.append("Shares cannot be negative.")
+    if (clean_df["Shares"] <= 0).any():
+        errors.append("Shares must be greater than zero.")
 
-    if (clean_df["Purchase Price"] < 0).any():
-        errors.append("Purchase Price cannot be negative.")
+    if (clean_df["Purchase Price"] <= 0).any():
+        errors.append("Purchase Price must be greater than zero.")
 
     if errors:
         return None, errors
 
+    clean_df["Cost Basis"] = clean_df["Shares"] * clean_df["Purchase Price"]
     clean_df = clean_df.groupby("Ticker", as_index=False).agg(
-        {"Shares": "sum", "Purchase Price": "mean"}
+        {"Shares": "sum", "Cost Basis": "sum"}
     )
+    clean_df["Purchase Price"] = clean_df["Cost Basis"] / clean_df["Shares"]
+    clean_df = clean_df[["Ticker", "Shares", "Purchase Price"]]
+
     return clean_df, []
 
 
@@ -104,6 +108,11 @@ def fetch_market_data(tickers, benchmark_ticker, analysis_period):
 
     historical_prices = historical_prices.ffill().dropna(how="all")
     current_prices = historical_prices[tickers].iloc[-1]
+
+    missing_prices = current_prices[current_prices.isna()].index.tolist()
+    if missing_prices:
+        raise ValueError(f"No current price found for: {', '.join(missing_prices)}")
+
     benchmark_prices = historical_prices[benchmark_ticker].dropna()
 
     return current_prices, historical_prices[tickers].dropna(), benchmark_prices
@@ -132,6 +141,10 @@ def calculate_portfolio_summary(portfolio_df, current_prices):
 def calculate_allocation(portfolio_summary):
     allocation_df = portfolio_summary[["Ticker", "Current Value"]].copy()
     total_value = allocation_df["Current Value"].sum()
+
+    if total_value <= 0:
+        raise ValueError("Portfolio value must be greater than zero.")
+
     allocation_df["Weight"] = allocation_df["Current Value"] / total_value
     allocation_df = allocation_df.sort_values("Weight", ascending=False)
 
@@ -275,16 +288,15 @@ try:
     current_prices, historical_prices, benchmark_prices = fetch_market_data(
         tickers, BENCHMARK_TICKER, ANALYSIS_PERIOD
     )
+    portfolio_summary = calculate_portfolio_summary(clean_portfolio_df, current_prices)
+    allocation_df, largest_holding, concentration_risk = calculate_allocation(
+        portfolio_summary
+    )
+    risk_summary = calculate_risk_metrics(historical_prices, allocation_df)
+    benchmark_summary = calculate_benchmark_summary(risk_summary, benchmark_prices)
 except Exception as error:
-    st.error(f"Market data could not be loaded: {error}")
+    st.error(f"Analysis could not be completed: {error}")
     st.stop()
-
-portfolio_summary = calculate_portfolio_summary(clean_portfolio_df, current_prices)
-allocation_df, largest_holding, concentration_risk = calculate_allocation(
-    portfolio_summary
-)
-risk_summary = calculate_risk_metrics(historical_prices, allocation_df)
-benchmark_summary = calculate_benchmark_summary(risk_summary, benchmark_prices)
 
 total_value = portfolio_summary["Current Value"].sum()
 total_cost = portfolio_summary["Cost Basis"].sum()
