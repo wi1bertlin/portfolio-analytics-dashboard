@@ -15,6 +15,8 @@ MSFT,5,420
 NVDA,3,120
 ```
 
+Shares and purchase prices must be greater than zero. If the same ticker appears more than once, the app combines the rows using total shares and total cost basis.
+
 The Jupyter notebook contains the same example portfolio directly in a DataFrame so each calculation can be studied one step at a time.
 
 ## Data
@@ -25,13 +27,14 @@ The Jupyter notebook contains the same example portfolio directly in a DataFrame
 
 ## Methodology
 1. Validate the portfolio tickers, shares, and purchase prices.
-2. Calculate current value, cost basis, profit/loss, and holding return.
-3. Calculate each holding's weight using current market value.
-4. Combine the historical stock returns using those portfolio weights.
-5. Annualise portfolio return and volatility.
-6. Calculate Sharpe ratio and maximum drawdown.
-7. Compare portfolio return and volatility with SPY.
-8. Display the holdings, allocation, risk metrics, and charts in Streamlit.
+2. Combine duplicate tickers using total shares and total cost basis.
+3. Calculate current value, cost basis, profit/loss, and holding return.
+4. Calculate each holding's weight using current market value.
+5. Combine the historical stock returns using those portfolio weights.
+6. Annualise portfolio return and volatility.
+7. Calculate Sharpe ratio and maximum drawdown.
+8. Compare portfolio return and volatility with SPY.
+9. Display the holdings, allocation, risk metrics, and charts in Streamlit.
 
 ## Outputs and Interpretation
 The project produces:
@@ -56,19 +59,21 @@ The results are intentionally dynamic. They depend on the uploaded holdings, pur
 This project taught me that a portfolio cannot be judged by profit alone. Two portfolios can produce similar returns while having very different concentration, volatility, and drawdown. I also learned how individual security returns are combined through portfolio weights and why a benchmark provides necessary context.
 
 ## How to Run the Streamlit Dashboard
-
 1. Install the dependencies:
 
-    pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
 
 2. Start the application:
 
-    streamlit run app.py
+```bash
+streamlit run app.py
+```
 
 3. Upload `sample_portfolio.csv` or a CSV using the same column names.
 
 ## How to Run the Notebook
-
 Open `portfolio_risk_benchmark_dashboard.ipynb` in Jupyter Notebook and run the cells from top to bottom.
 
 ## Author
