@@ -28,10 +28,92 @@ def format_percent(value):
     return f"{value:.2%}"
 
 
+def format_score(value):
+    return f"{value:.1f}/10"
+
+
 def max_drawdown(cumulative_returns):
     running_max = cumulative_returns.cummax()
     drawdown = cumulative_returns / running_max - 1
     return drawdown.min(), drawdown
+
+
+def score_diversification(allocation_df):
+    largest_weight = allocation_df["Weight"].max()
+    number_of_holdings = len(allocation_df)
+
+    if largest_weight <= 0.25:
+        score = 9
+    elif largest_weight <= 0.40:
+        score = 7
+    elif largest_weight <= 0.60:
+        score = 4
+    else:
+        score = 2
+
+    if number_of_holdings >= 5:
+        score += 1
+
+    return min(score, 10)
+
+
+def score_risk(risk_summary):
+    volatility = risk_summary["Volatility"]
+    max_drawdown_value = abs(risk_summary["Maximum Drawdown"])
+
+    if volatility <= 0.15:
+        volatility_score = 9
+    elif volatility <= 0.25:
+        volatility_score = 7
+    elif volatility <= 0.35:
+        volatility_score = 5
+    else:
+        volatility_score = 3
+
+    if max_drawdown_value <= 0.15:
+        drawdown_score = 9
+    elif max_drawdown_value <= 0.25:
+        drawdown_score = 7
+    elif max_drawdown_value <= 0.40:
+        drawdown_score = 5
+    else:
+        drawdown_score = 3
+
+    return (volatility_score + drawdown_score) / 2
+
+
+def score_return(risk_summary, benchmark_summary):
+    sharpe_ratio = risk_summary["Sharpe Ratio"]
+    relative_performance = benchmark_summary["Relative Performance"]
+    portfolio_return = benchmark_summary["Portfolio Return"]
+
+    if pd.isna(sharpe_ratio):
+        sharpe_ratio = 0
+
+    if relative_performance > 0 and sharpe_ratio >= 1:
+        score = 9
+    elif relative_performance > 0 or sharpe_ratio >= 0.75:
+        score = 7
+    elif portfolio_return > 0:
+        score = 5
+    else:
+        score = 3
+
+    return score
+
+
+def calculate_health_score(allocation_df, risk_summary, benchmark_summary):
+    diversification_score = score_diversification(allocation_df)
+    risk_score = score_risk(risk_summary)
+    return_score = score_return(risk_summary, benchmark_summary)
+    overall_score = (diversification_score + risk_score + return_score) / 3
+
+    return {
+        "Diversification": diversification_score,
+        "Risk": risk_score,
+        "Return": return_score,
+        "Overall": overall_score,
+    }
 
 
 # BLOCK 2 - FILE UPLOAD
@@ -294,6 +376,7 @@ try:
     )
     risk_summary = calculate_risk_metrics(historical_prices, allocation_df)
     benchmark_summary = calculate_benchmark_summary(risk_summary, benchmark_prices)
+    health_score = calculate_health_score(allocation_df, risk_summary, benchmark_summary)
 except Exception as error:
     st.error(f"Analysis could not be completed: {error}")
     st.stop()
@@ -335,7 +418,15 @@ risk_cols[1].metric("Volatility", format_percent(risk_summary["Volatility"]))
 risk_cols[2].metric("Sharpe Ratio", f"{risk_summary['Sharpe Ratio']:.2f}")
 risk_cols[3].metric("Max Drawdown", format_percent(risk_summary["Maximum Drawdown"]))
 
-st.subheader("5. Benchmark Comparison")
+st.subheader("5. Portfolio Health Score")
+health_cols = st.columns(4)
+health_cols[0].metric("Diversification", format_score(health_score["Diversification"]))
+health_cols[1].metric("Risk", format_score(health_score["Risk"]))
+health_cols[2].metric("Return", format_score(health_score["Return"]))
+health_cols[3].metric("Overall Score", format_score(health_score["Overall"]))
+st.progress(min(max(health_score["Overall"] / 10, 0), 1))
+
+st.subheader("6. Benchmark Comparison")
 benchmark_cols = st.columns(5)
 benchmark_cols[0].metric(
     "Portfolio Return", format_percent(benchmark_summary["Portfolio Return"])
@@ -354,7 +445,7 @@ benchmark_cols[4].metric(
     "More Risk?", "Yes" if benchmark_summary["Took More Risk"] else "No"
 )
 
-st.subheader("6. Charts")
+st.subheader("7. Charts")
 chart_tabs = st.tabs(
     [
         "Portfolio Growth",
