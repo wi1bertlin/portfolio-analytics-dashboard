@@ -3,7 +3,7 @@
 ## Research Question
 How can a portfolio be evaluated beyond its profit or loss, and did it earn enough return for the risk taken relative to the S&P 500?
 
-I built this project after my stock-comparison and moving-average projects because both focused mainly on returns. This project adds portfolio allocation, diversification, volatility, Sharpe ratio, drawdown, and benchmark analysis.
+I built this project after my stock-comparison and moving-average projects because both focused mainly on returns. This project adds portfolio allocation, diversification, volatility, Sharpe ratio, drawdown, benchmark analysis, and a simple portfolio health score.
 
 ## Portfolio Input
 The Streamlit application accepts a CSV with three columns:
@@ -34,7 +34,27 @@ The Jupyter notebook contains the same example portfolio directly in a DataFrame
 6. Annualise portfolio return and volatility.
 7. Calculate Sharpe ratio and maximum drawdown.
 8. Compare portfolio return and volatility with SPY.
-9. Display the holdings, allocation, risk metrics, and charts in Streamlit.
+9. Estimate a simple portfolio health score.
+10. Display the holdings, allocation, risk metrics, benchmark comparison, health score, and charts in Streamlit.
+
+## Portfolio Health Score
+The health score is a simple rule-based score out of 10. It is designed to make the dashboard easier to interpret, not to give investment advice.
+
+The score has three parts:
+- Diversification: based on the largest holding and number of holdings
+- Risk: based on volatility and maximum drawdown
+- Return: based on Sharpe ratio and performance relative to SPY
+
+The overall score is the average of the three parts.
+
+Example output:
+
+```text
+Diversification: 7/10
+Risk: 6/10
+Return: 8/10
+Overall Score: 7.0/10
+```
 
 ## Outputs and Interpretation
 The project produces:
@@ -42,12 +62,14 @@ The project produces:
 - Holding-level returns and portfolio weights
 - Largest holding and a simple concentration-risk label
 - Annual return, volatility, Sharpe ratio, and maximum drawdown
+- Portfolio health score
 - Portfolio growth and drawdown charts
 - Portfolio-versus-SPY return and risk comparison
 
 The results are intentionally dynamic. They depend on the uploaded holdings, purchase prices, analysis date, and market data, so the README does not present fixed performance figures as universal results.
 
 ## Limitations
+- The health score is a simplified educational score, not a professional investment rating.
 - Historical portfolio returns use weights based on current market values rather than a complete transaction history.
 - Purchase prices do not include purchase dates, deposits, withdrawals, dividends received, taxes, or fees.
 - The portfolio is treated as static and rebalancing is not modelled.
@@ -57,6 +79,8 @@ The results are intentionally dynamic. They depend on the uploaded holdings, pur
 
 ## What I Learned
 This project taught me that a portfolio cannot be judged by profit alone. Two portfolios can produce similar returns while having very different concentration, volatility, and drawdown. I also learned how individual security returns are combined through portfolio weights and why a benchmark provides necessary context.
+
+Adding the health score helped me practise turning several portfolio metrics into a simple summary that a user can understand quickly.
 
 ## How to Run the Streamlit Dashboard
 1. Install the dependencies:
